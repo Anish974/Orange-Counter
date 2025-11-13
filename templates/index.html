@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🍊 Orange Counter</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #f97316;
+      --primary-dark: #ea580c;
+      --secondary: #ffb347;
+      --bg-light: #fffaf3;
+      --bg-dark: #1e1e1e;
+      --text-light: #333;
+      --text-dark: #f3f4f6;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, var(--secondary), var(--primary));
+      color: var(--text-light);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      transition: all 0.4s ease;
+    }
+
+    body.dark {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: var(--text-dark);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1000px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    h1 {
+      color: var(--primary-dark);
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      text-align: center;
+      opacity: 0.8;
+      margin-bottom: 1rem;
+    }
+
+    .dark-toggle {
+      position: absolute;
+      top: 15px;
+      right: 25px;
+      font-size: 1.5rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .flex-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .flex-item {
+      flex: 1 1 350px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 16px;
+      padding: 1rem;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--primary);
+      border-radius: 16px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .upload-zone:hover {
+      background: rgba(249, 115, 22, 0.05);
+      transform: scale(1.02);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    img, video {
+      max-width: 100%;
+      border-radius: 12px;
+      display: none;
+      margin-top: 1rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.8rem 1.8rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      margin-top: 1rem;
+      width: 100%;
+    }
+
+    button:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      background: #facc15;
+      color: #222;
+    }
+
+    .btn-secondary:hover {
+      background: #eab308;
+    }
+
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 1.5rem auto;
+      display: none;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    .result {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .error {
+      color: #ef4444;
+      font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+      .flex-container {
+        flex-direction: column;
+      }
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dark-toggle" id="themeToggle">🌙</div>
+
+  <div class="container">
+    <h1>🍊 Orange Counter</h1>
+    <p>Upload or take a photo of an orange tree — AI will count the oranges automatically!</p>
+
+    <div class="flex-container">
+      <!-- Input Section -->
+      <div class="flex-item">
+        <div class="upload-zone" id="dropZone">
+          <p>📁 Drop image here or click to upload</p>
+          <input type="file" id="fileInput" accept="image/*">
+        </div>
+        <button class="btn-secondary" onclick="openCamera()">📸 Open Camera</button>
+        <video id="camera" autoplay playsinline></video>
+        <button id="captureBtn" style="display:none;" class="btn-secondary" onclick="capturePhoto()">📷 Capture Photo</button>
+        <img id="previewImage" alt="Preview">
+      </div>
+
+      <!-- Output Section -->
+      <div class="flex-item">
+        <button id="detectBtn" onclick="uploadImage()">🔍 Count Oranges</button>
+        <div class="loader" id="loader"></div>
+        <div class="result" id="countResult"></div>
+        <img id="resultImage" alt="Detection Result">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const previewImg = document.getElementById('previewImage');
+    const camera = document.getElementById('camera');
+    const captureBtn = document.getElementById('captureBtn');
+    const resultImg = document.getElementById('resultImage');
+    const resultText = document.getElementById('countResult');
+    const loader = document.getElementById('loader');
+    const themeToggle = document.getElementById('themeToggle');
+
+    // 🌙 Dark mode
+    themeToggle.onclick = () => {
+      document.body.classList.toggle('dark');
+      themeToggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+    };
+
+    // 🖼️ Drag & drop
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.style.background = 'rgba(249,115,22,0.1)';
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.style.background = 'transparent');
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      fileInput.files = e.dataTransfer.files;
+      handlePreview(fileInput.files[0]);
+    });
+
+    fileInput.addEventListener('change', () => handlePreview(fileInput.files[0]));
+
+    function handlePreview(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        previewImg.src = e.target.result;
+        previewImg.style.display = 'block';
+        resultImg.style.display = 'none';
+        resultText.textContent = '';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // 📸 Live Camera Functions
+    async function openCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        camera.srcObject = stream;
+        camera.style.display = "block";
+        captureBtn.style.display = "block";
+        previewImg.style.display = "none";
+      } catch (err) {
+        alert("Camera access denied or unavailable!");
+      }
+    }
+
+    async function capturePhoto() {
+      const canvas = document.createElement('canvas');
+      canvas.width = camera.videoWidth;
+      canvas.height = camera.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(camera, 0, 0, canvas.width, canvas.height);
+      const dataURL = canvas.toDataURL('image/png');
+
+      previewImg.src = dataURL;
+      previewImg.style.display = 'block';
+      camera.style.display = 'none';
+      captureBtn.style.display = 'none';
+
+      // Stop the camera stream
+      const stream = camera.srcObject;
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+
+      // Convert to blob and upload automatically
+      const blob = await (await fetch(dataURL)).blob();
+      const file = new File([blob], "captured_orange.png", { type: "image/png" });
+      fileInput.files = new DataTransfer().files;
+      handlePreview(file);
+      uploadCapturedImage(blob);
+    }
+
+    async function uploadCapturedImage(blob) {
+      resultText.textContent = '';
+      loader.style.display = 'block';
+      resultImg.style.display = 'none';
+
+      try {
+        const formData = new FormData();
+        formData.append("image", blob, "capture.png");
+
+        const res = await fetch("/detect", { method: "POST", body: formData });
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        const data = await res.json();
+
+        loader.style.display = 'none';
+        resultText.textContent = `🍊 Total Oranges Detected: ${data.count}`;
+        resultImg.src = `data:image/png;base64,${data.image}`;
+        resultImg.style.display = 'block';
+      } catch (err) {
+        loader.style.display = 'none';
+        resultText.innerHTML = `<span class='error'>⚠️ ${err.message}</span>`;
+      }
+    }
+
+    // 🍊 Upload existing image
+    async function uploadImage() {
+      const file = fileInput.files[0];
+      if (!file) return alert("Please select or capture an image first!");
+      resultText.textContent = '';
+      loader.style.display = 'block';
+      resultImg.style.display = 'none';
+
+      try {
+        const formData = new FormData();
+        formData.append("image", file);
+
+        const res = await fetch("/detect", { method: "POST", body: formData });
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        const data = await res.json();
+
+        loader.style.display = 'none';
+        resultText.textContent = `🍊 Total Oranges Detected: ${data.count}`;
+        resultImg.src = `data:image/png;base64,${data.image}`;
+        resultImg.style.display = 'block';
+      } catch (err) {
+        loader.style.display = 'none';
+        resultText.innerHTML = `<span class='error'>⚠️ ${err.message}</span>`;
+      }
+    }
+  </script>
+</body>
+</html>

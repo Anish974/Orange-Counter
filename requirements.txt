@@ -1,0 +1,6 @@
+streamlit
+ultralytics
+pillow
+Flask
+flask-cors
+gunicorn
