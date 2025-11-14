@@ -1,6 +1,0 @@
-train: /content/Fruit-counting-2/train/images
-val: /content/Fruit-counting-2/valid/images
-test: /content/Fruit-counting-2/test/images
-
-nc: 1
-names: ['fruit']
